@@ -1,4 +1,4 @@
-package com.example.clientserver.model;
+package com.example.events.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 

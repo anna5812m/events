@@ -1,4 +1,4 @@
-package com.example.clientserver.model;
+package com.example.events.model;
 
 import org.springframework.validation.Errors;
 import org.springframework.validation.ObjectError;

@@ -1,6 +1,6 @@
-package com.example.clientserver;
+package com.example.events;
 
-import com.example.clientserver.model.*;
+import com.example.events.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -9,61 +9,71 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api")
 public class RepetitionController {
-    private CommonRepository<Repetition> repository;
+
+    private RepetitionRepository repetitionRepository;
+ //   private CommonRepository<Repetition> repository;
 
     @Autowired
-    public RepetitionController(CommonRepository<Repetition> repository) {
-        this.repository = repository;
+    public RepetitionController(RepetitionRepository repetitionRepository) {
+        this.repetitionRepository = repetitionRepository;
     }
 
-    @GetMapping("/client-server")
+    @GetMapping("/events")
     public ResponseEntity<Iterable<Repetition>> getRepetitions(){
-        return ResponseEntity.ok(repository.findAll());
+        return ResponseEntity.ok(repetitionRepository.findAll());
     }
 
-    @GetMapping("/client-server/{id}")
+    @GetMapping("/events/{id}")
     public ResponseEntity<Repetition> getRepetitionById(@PathVariable String id){
-        return ResponseEntity.ok(repository.findById(id));
+        Optional<Repetition> repetition = repetitionRepository.findById(id);
+        if(repetition.isPresent())
+            return ResponseEntity.ok(repetition.get());
+        return ResponseEntity.notFound().build();
     }
 
-    @PatchMapping("/client-server/{id}")
+    @PatchMapping("/events/{id}")
     public ResponseEntity<Repetition> setCompleted(@PathVariable String id){
-        Repetition result = repository.findById(id);
-        result.setCompleted(true);
-        repository.save(result);
-        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
-                .buildAndExpand(result.getId()).toUri();
-        ResponseEntity<Repetition> build = ResponseEntity.ok().header
-                ("Location", location.toString()).build();
-        return build;
+        Optional<Repetition> toDo = repetitionRepository.findById(id);
+        if(!toDo.isPresent())
+            return ResponseEntity.notFound().build();
+        Repetition result = toDo.get();
+        result.setCompleted(true) ;
+        repetitionRepository.save(result);
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest().
+                buildAndExpand(result.getId()).toUri();
+        return ResponseEntity.ok().header("Location",location.toString()).
+                build();
     }
 
-    @RequestMapping(value="/client-server", method = {RequestMethod.POST,
+    @RequestMapping(value="/events", method = {RequestMethod.POST,
             RequestMethod.PUT})
-    public ResponseEntity<?> createRepetition(@RequestBody Repetition toDo,
-                                        Errors errors){
+    public ResponseEntity<?> createRepetition( @RequestBody Repetition repetition,
+                                               Errors errors){
+
         if (errors.hasErrors()) {
             return ResponseEntity.badRequest().
                     body(RepetitionValidationErrorBuilder.fromBindingErrors(errors));
         }
-        Repetition result = repository.save(toDo);
+        Repetition result = repetitionRepository.save(repetition);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest().
                 path("/{id}").buildAndExpand(result.getId()).toUri();
         return ResponseEntity.created(location).build();
     }
 
-    @DeleteMapping("/client-server/{id}")
-    public ResponseEntity<Repetition> deleteToDo(@PathVariable String id){
-        repository.delete(RepetitionBuilder.create().withId(id).build());
+    @DeleteMapping("/events/{id}")
+    public ResponseEntity<Repetition> deleteRepetition(@PathVariable String id){
+        repetitionRepository.delete(RepetitionBuilder.create().withId(id).build());
         return ResponseEntity.noContent().build();
     }
-    @DeleteMapping("/client-server")
-    public ResponseEntity<Repetition> deleteToDo(@RequestBody Repetition toDo){
-        repository.delete(toDo);
+
+    @DeleteMapping("/events")
+    public ResponseEntity<Repetition> deleteRepetition(@RequestBody Repetition repetition){
+        repetitionRepository.delete(repetition);
         return ResponseEntity.noContent().build();
     }
 
